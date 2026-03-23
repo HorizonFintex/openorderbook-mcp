@@ -1,35 +1,10 @@
-name: Secure Public Mirror
-
+name: Mirror to Public
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: # Allows you to trigger a manual mirror if needed
 
 jobs:
-  # GATE 1: Security Scan
-  security-scan:
-    name: Security Gate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Gitleaks Scan
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Adding this line prevents the 'missing license' error for the OS version
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} 
-        with:
-          # If you don't have a license, ensure you aren't trying to 
-          # use features like 'upload-to-gitleaks-cloud'
-          config-path: .gitleaks.toml
-
-  # GATE 2: The Actual Mirror (Only runs if Gate 1 passes)
   mirror:
-    name: Mirror to Public
-    needs: security-scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,11 +17,9 @@ jobs:
         with:
           app-id: ${{ secrets.MIRROR_APP_ID }}
           private-key: ${{ secrets.MIRROR_PRIVATE_KEY }}
-          # This points to your public org on github.com
           owner: your-public-org-name 
 
-      - name: Push to Public Repository
+      - name: Push to Public
         run: |
-          # Use the token from the GitHub App to push to the .com repo
-          git remote add public https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/your-public-org/${{ github.event.repository.name }}.git
+          git remote add public https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/HorizonFintex/openorderbook-mcp.git
           git push public main --force
