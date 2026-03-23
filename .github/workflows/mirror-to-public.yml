@@ -18,6 +18,7 @@ jobs:
           app-id: ${{ secrets.MIRROR_APP_ID }}
           private-key: ${{ secrets.MIRROR_PRIVATE_KEY }}
           owner: HorizonFintex
+          repositories: openorderbook-mcp
           github-api-url: https://api.github.com
 
       - name: Push to Public
