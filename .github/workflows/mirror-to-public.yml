@@ -2,15 +2,16 @@ name: Mirror to Public
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: # This enables the manual trigger button
+  workflow_dispatch: # Manual trigger for PIM-elevated sessions
 
 jobs:
   mirror:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Internal Repo
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Essential for git history and force-pushing
 
       - name: Generate App Token
         uses: actions/create-github-app-token@v1
@@ -22,7 +23,26 @@ jobs:
           repositories: openorderbook-mcp
           github-api-url: https://api.github.com
 
-      - name: Push to Public
+      - name: Clean and Push to Public
         run: |
+          # 1. Setup the remote using the dynamic App Token
           git remote add public https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/HorizonFintex/openorderbook-mcp.git
-          git push public main --force
+          
+          # 2. Setup git identity for the temporary commit
+          git config user.name "Horizon Fintex Mirror Bot"
+          git config user.email "bot@horizonfintex.ghe.com"
+          
+          # 3. Create a temporary local branch to filter content
+          git checkout -b temp-mirror-stage
+          
+          # 4. Remove the .github folder (workflows, actions, etc.) from the staging index
+          # This hides your internal CI/CD and Sentinel logic from the public repo.
+          if [ -d ".github" ]; then
+            git rm -rf .github --cached
+            git commit -m "Mirroring latest source (excluding internal workflows)"
+          else
+            echo "No .github folder found, skipping exclusion step."
+          fi
+          
+          # 5. Push the cleaned local 'temp-mirror-stage' to public 'main'
+          git push public temp-mirror-stage:main --force
