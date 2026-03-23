@@ -1,0 +1,9 @@
+# MCP config with secrets
+.vscode/mcp.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
