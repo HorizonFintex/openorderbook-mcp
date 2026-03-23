@@ -2,6 +2,7 @@ name: Mirror to Public
 on:
   push:
     branches: [ main ]
+  workflow_dispatch: # This enables the manual trigger button
 
 jobs:
   mirror:
