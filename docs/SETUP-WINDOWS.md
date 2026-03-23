@@ -5,7 +5,7 @@
 Clone the repository or download and unzip from GitHub:
 
 ```powershell
-git clone https://github.com/user/openorderbook-mcp.git
+git clone https://github.com/HorizonFintex/openorderbook-mcp.git
 ```
 
 The pre-built binary for Windows is in `releases\win-x64\`.
@@ -35,6 +35,8 @@ Move-Item keystore.json $env:USERPROFILE\keys\
 
 VS Code works with **folders** — a folder you open becomes your "workspace". All MCP configuration lives inside that folder.
 
+The workspace is **separate from the cloned repo**. You create a new empty folder for your workspace, then copy the MCP config template from the cloned repo into it.
+
 Create a directory to use as your trading workspace:
 
 ```powershell
@@ -61,7 +63,9 @@ New-Item -ItemType Directory -Path .vscode -Force
 Copy-Item C:\dev\openorderbook-mcp\config\mcp.json.template .vscode\mcp.json
 ```
 
-Edit `.vscode/mcp.json` and fill in your values:
+Open `.vscode/mcp.json` **inside VS Code** (click it in the Explorer panel — do not use Notepad or another external editor, as VS Code detects MCP config changes automatically).
+
+Fill in your values:
 
 ```jsonc
 {
@@ -89,20 +93,35 @@ Edit `.vscode/mcp.json` and fill in your values:
 ```
 
 Replace:
-- `C:\\dev\\openorderbook-mcp\\releases\\win-x64\\OpenOrderbookSignerMcp.exe` — full path to the binary (use double backslashes)
-- `C:\\Users\\yourname\\keys\\keystore.json` — full path to your keystore file (use double backslashes)
+- `C:\\dev\\openorderbook-mcp\\releases\\win-x64\\OpenOrderbookSignerMcp.exe` — full path to the binary
+- `C:\\Users\\yourname\\keys\\keystore.json` — full path to your keystore file
 - `<your-keystore-password>` — your keystore decryption password
 - `<your-client-secret>` — Azure AD B2C client secret (from your team lead)
 
+> **IMPORTANT — Double backslashes:** All Windows paths in JSON must use `\\` (double backslash), not `\` (single backslash). For example:
+> - ✅ `"C:\\Dev\\openorderbook-mcp\\releases\\win-x64\\OpenOrderbookSignerMcp.exe"`
+> - ❌ `"C:\Dev\openorderbook-mcp\releases\win-x64\OpenOrderbookSignerMcp.exe"`
+>
+> A single backslash is treated as a JSON escape character and will cause the path to be invalid.
+
 > **IMPORTANT:** Never commit `.vscode/mcp.json` — it contains secrets. The `.gitignore` already excludes it.
 
-## 6. Restart VS Code
+## 6. Start the MCP Servers
 
 Close and reopen VS Code (or reload: `Ctrl+Shift+P` → "Developer: Reload Window").
 
 VS Code will discover both MCP servers:
 - **fro-local-signer** — the local signing binary
 - **fro-uat** — the remote Azure MCP server
+
+**You must start both servers manually:**
+
+1. Open the MCP servers panel (look for the MCP icon in the sidebar, or use `Ctrl+Shift+P` → "MCP: List Servers")
+2. You should see both **fro-local-signer** and **fro-uat** listed
+3. Click **Start** on each server
+4. Wait until both show a **Running** status (a green indicator) before proceeding
+
+> **Note:** Both servers must be running before you can use any trading commands. If either shows an error, check the server output for details.
 
 ## 7. Verify Setup
 
@@ -122,9 +141,9 @@ You should see:
 
 Then try:
 
-> "Show me the current FRO market"
+> "Show me all FRO offers"
 
-This confirms the remote MCP connection is working.
+Copilot will automatically acquire a bearer token (via `acquire_bearer_token`) and then call `GetMarket` to fetch the results. This confirms the remote MCP connection is working.
 
 ## 8. Your First Trade
 

@@ -19,12 +19,18 @@ graph LR
 
 1. **Clone or download** this repository:
    ```bash
-   git clone https://github.com/user/openorderbook-mcp.git
+   git clone https://github.com/HorizonFintex/openorderbook-mcp.git
    ```
 
-2. **Create a workspace folder** — this is the directory VS Code will open and where your config lives:
+2. **Create a workspace folder** — this is a separate directory from the cloned repo. VS Code will open this folder and your MCP config lives inside it:
+
+   **macOS / Linux:**
    ```bash
    mkdir -p ~/fro-workspace
+   ```
+   **Windows (PowerShell):**
+   ```powershell
+   New-Item -ItemType Directory -Path C:\fro-workspace -Force
    ```
    Open VS Code, go to **File → Open Folder…**, select the `fro-workspace` folder, and click **Open**.
 
@@ -36,14 +42,24 @@ graph LR
    ```
 
 4. **Configure** — copy the template and fill in your values:
+
+   **macOS / Linux:**
    ```bash
    cd ~/fro-workspace
    mkdir -p .vscode
    cp /path/to/openorderbook-mcp/config/mcp.json.template .vscode/mcp.json
    ```
-   Edit `.vscode/mcp.json`: set the `command` to the full path to your platform's binary, and fill in your keystore path, password, and client secret.
+   **Windows (PowerShell):**
+   ```powershell
+   cd C:\fro-workspace
+   New-Item -ItemType Directory -Path .vscode -Force
+   Copy-Item C:\dev\openorderbook-mcp\config\mcp.json.template .vscode\mcp.json
+   ```
+   Edit `.vscode/mcp.json` **inside VS Code** (not an external editor): set the `command` to the full path to your platform's binary, and fill in your keystore path, password, and client secret.
 
-5. **Restart VS Code** — Copilot will discover both MCP servers automatically.
+   > **Windows:** All paths in JSON must use double backslashes (e.g. `C:\\dev\\...`). See the [Windows Setup Guide](docs/SETUP-WINDOWS.md) for a complete example.
+
+5. **Start the MCP servers** — after reloading VS Code (`Ctrl+Shift+P` → "Developer: Reload Window"), open the MCP servers panel. You should see both **fro-local-signer** and **fro-uat** listed. Click **Start** on each server and wait until both show a **Running** status before proceeding.
 
 6. **Verify** — ask Copilot:
    > "Check signer status"

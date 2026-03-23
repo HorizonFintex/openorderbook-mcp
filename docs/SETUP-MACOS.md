@@ -3,7 +3,7 @@
 ## 1. Clone or Download the Repository
 
 ```bash
-git clone https://github.com/user/openorderbook-mcp.git
+git clone https://github.com/HorizonFintex/openorderbook-mcp.git
 ```
 
 Or download and unzip from GitHub. The pre-built binary for your Mac is in the `releases/` folder.
@@ -62,6 +62,8 @@ chmod 600 ~/keys/keystore.json
 
 VS Code works with **folders** — a folder you open becomes your "workspace". All MCP configuration lives inside that folder.
 
+The workspace is **separate from the cloned repo**. You create a new empty folder for your workspace, then copy the MCP config template from the cloned repo into it.
+
 Create a directory to use as your trading workspace:
 
 ```bash
@@ -88,7 +90,9 @@ mkdir -p .vscode
 cp ~/openorderbook-mcp/config/mcp.json.template .vscode/mcp.json
 ```
 
-Edit `.vscode/mcp.json` and fill in your values:
+Open `.vscode/mcp.json` **inside VS Code** (click it in the Explorer panel — do not use TextEdit or another external editor, as VS Code detects MCP config changes automatically).
+
+Fill in your values:
 
 ```jsonc
 {
@@ -123,13 +127,22 @@ Replace:
 
 > **IMPORTANT:** Never commit `.vscode/mcp.json` — it contains secrets. The `.gitignore` already excludes it.
 
-## 8. Restart VS Code
+## 8. Start the MCP Servers
 
 Close and reopen VS Code (or reload the window: `Cmd+Shift+P` → "Developer: Reload Window").
 
 VS Code will discover both MCP servers:
 - **fro-local-signer** — the local signing binary
 - **fro-uat** — the remote Azure MCP server
+
+**You must start both servers manually:**
+
+1. Open the MCP servers panel (look for the MCP icon in the sidebar, or use `Cmd+Shift+P` → "MCP: List Servers")
+2. You should see both **fro-local-signer** and **fro-uat** listed
+3. Click **Start** on each server
+4. Wait until both show a **Running** status (a green indicator) before proceeding
+
+> **Note:** Both servers must be running before you can use any trading commands. If either shows an error, check the server output for details.
 
 ## 9. Verify Setup
 
@@ -149,9 +162,9 @@ You should see a response like:
 
 Then try:
 
-> "Show me the current FRO market"
+> "Show me all FRO offers"
 
-This will call the remote MCP to fetch open offers, confirming everything is connected.
+Copilot will automatically acquire a bearer token and call `GetMarket` to fetch open offers, confirming everything is connected.
 
 ## 10. Your First Trade
 
