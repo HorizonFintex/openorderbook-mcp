@@ -19,7 +19,12 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # If a secret is found, this job fails and the 'mirror' job won't start.
+          # Adding this line prevents the 'missing license' error for the OS version
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} 
+        with:
+          # If you don't have a license, ensure you aren't trying to 
+          # use features like 'upload-to-gitleaks-cloud'
+          config-path: .gitleaks.toml
 
   # GATE 2: The Actual Mirror (Only runs if Gate 1 passes)
   mirror:
