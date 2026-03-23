@@ -1,0 +1,9 @@
+[allowlist]
+description = "Allow non-sensitive files"
+paths = ['^documentation/', '^LICENSE']
+
+[[rules]]
+description = "Horizon Fintex GHE Token"
+id = "ghe-horizon-token"
+regex = '''ghu_[a-zA-Z0-9]{36}''' # Pattern for EMU-specific user tokens
+keywords = ["ghu_"]
