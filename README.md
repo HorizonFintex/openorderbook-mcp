@@ -2,4 +2,4 @@ Test mirror
 
 Test code analysis
 
-ghp_1234567890abcdef1234567890abcdef5678
+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
