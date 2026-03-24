@@ -58,36 +58,26 @@ mv keystore.json ~/keys/
 chmod 600 ~/keys/keystore.json
 ```
 
-## 6. Create Your Workspace
+## 6. Open the Repository in VS Code
 
-VS Code works with **folders** — a folder you open becomes your "workspace". All MCP configuration lives inside that folder.
-
-The workspace is **separate from the cloned repo**. You create a new empty folder for your workspace, then copy the MCP config template from the cloned repo into it.
-
-Create a directory to use as your trading workspace:
-
-```bash
-mkdir -p ~/fro-workspace
-```
-
-Then open it in VS Code:
+Open the cloned repo directly as your workspace — this gives Copilot access to all the documentation (architecture, tools reference, trading skill file) so it can guide you through setup and trading.
 
 1. Launch VS Code
 2. Go to **File → Open Folder…** (or press `Cmd+O`)
-3. Navigate to the `fro-workspace` folder you just created and click **Open**
+3. Navigate to the `openorderbook-mcp` folder you cloned and click **Open**
 
-This is now your workspace. The MCP config file will go inside a `.vscode` subfolder here.
+This is now your workspace. The MCP config file will go inside a `.vscode` subfolder here. The `.gitignore` already excludes `.vscode/mcp.json` so your secrets won't be committed.
 
-> **Tip:** You can name the folder anything you like — `fro-workspace` is just a suggestion. You'll use this same folder each time you open VS Code to trade.
+> **Why the repo folder?** The `docs/` folder contains a [SKILL.md](SKILL.md) file that teaches Copilot how to use the trading tools — correct parameter formats, required workflows, error handling, and more. Opening the repo as your workspace lets Copilot read these files automatically.
 
 ## 7. Configure MCP
 
-From your workspace folder, copy the template config:
+Create the `.vscode` folder and copy the template config:
 
 ```bash
-cd ~/fro-workspace
+cd ~/openorderbook-mcp   # or wherever you cloned the repo
 mkdir -p .vscode
-cp ~/openorderbook-mcp/config/mcp.json.template .vscode/mcp.json
+cp config/mcp.json.template .vscode/mcp.json
 ```
 
 Open `.vscode/mcp.json` **inside VS Code** (click it in the Explorer panel — do not use TextEdit or another external editor, as VS Code detects MCP config changes automatically).

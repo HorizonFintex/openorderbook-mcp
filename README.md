@@ -22,17 +22,11 @@ graph LR
    git clone https://github.com/HorizonFintex/openorderbook-mcp.git
    ```
 
-2. **Create a workspace folder** — this is a separate directory from the cloned repo. VS Code will open this folder and your MCP config lives inside it:
+2. **Open the repo in VS Code** — use the cloned repo as your workspace so Copilot has access to all the documentation and the [trading skill file](docs/SKILL.md):
 
-   **macOS / Linux:**
-   ```bash
-   mkdir -p ~/fro-workspace
-   ```
-   **Windows (PowerShell):**
-   ```powershell
-   New-Item -ItemType Directory -Path C:\fro-workspace -Force
-   ```
-   Open VS Code, go to **File → Open Folder…**, select the `fro-workspace` folder, and click **Open**.
+   1. Launch VS Code
+   2. Go to **File → Open Folder…**
+   3. Select the `openorderbook-mcp` folder and click **Open**
 
 3. **macOS only** — make the binary executable and remove Gatekeeper quarantine:
    ```bash
@@ -41,19 +35,19 @@ graph LR
    xattr -d com.apple.quarantine /path/to/openorderbook-mcp/releases/osx-arm64/OpenOrderbookSignerMcp
    ```
 
-4. **Configure** — copy the template and fill in your values:
+4. **Configure** — create the `.vscode` folder and copy the template:
 
    **macOS / Linux:**
    ```bash
-   cd ~/fro-workspace
+   cd ~/openorderbook-mcp   # or wherever you cloned the repo
    mkdir -p .vscode
-   cp /path/to/openorderbook-mcp/config/mcp.json.template .vscode/mcp.json
+   cp config/mcp.json.template .vscode/mcp.json
    ```
    **Windows (PowerShell):**
    ```powershell
-   cd C:\fro-workspace
+   cd C:\dev\openorderbook-mcp   # or wherever you cloned the repo
    New-Item -ItemType Directory -Path .vscode -Force
-   Copy-Item C:\dev\openorderbook-mcp\config\mcp.json.template .vscode\mcp.json
+   Copy-Item config\mcp.json.template .vscode\mcp.json
    ```
    Edit `.vscode/mcp.json` **inside VS Code** (not an external editor): set the `command` to the full path to your platform's binary, and fill in your keystore path, password, and client secret.
 
@@ -78,6 +72,13 @@ For detailed setup instructions, see:
 | [SETUP-WINDOWS.md](docs/SETUP-WINDOWS.md) | Detailed Windows installation and configuration |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Two-server model, signing flow, security design |
 | [TOOLS-REFERENCE.md](docs/TOOLS-REFERENCE.md) | Complete reference for all local + remote MCP tools |
+| [SKILL.md](docs/SKILL.md) | AI skill file — teaches Copilot how to use the trading tools |
+
+## AI-Assisted Onboarding
+
+This repository includes a [SKILL.md](docs/SKILL.md) file that teaches GitHub Copilot the complete FRO trading workflow — parameter formats, signing sequences, error handling, and best practices. When you open this repo as your VS Code workspace, Copilot can read these docs and guide you through trading step by step.
+
+For the best experience, ensure you have [GitHub Copilot](https://github.com/features/copilot) installed in VS Code before you start.
 
 ## What You Can Do
 
@@ -103,18 +104,21 @@ Copilot handles the full sign → submit → confirm workflow automatically.
 
 ```
 openorderbook-mcp/
+├── .github/
+│   └── copilot-instructions.md  # Auto-loaded rules for Copilot
 ├── config/
-│   └── mcp.json.template    # MCP config template (copy to .vscode/mcp.json)
+│   └── mcp.json.template        # MCP config template (copy to .vscode/mcp.json)
 ├── docs/
-│   ├── SETUP-MACOS.md        # macOS setup guide
-│   ├── SETUP-WINDOWS.md      # Windows setup guide
-│   ├── ARCHITECTURE.md       # Architecture & security design
-│   └── TOOLS-REFERENCE.md    # All MCP tools reference
-└── releases/                 # Pre-built self-contained binaries
-    ├── osx-arm64/            # Apple Silicon (M1/M2/M3/M4)
-    ├── osx-x64/              # Intel Mac
-    ├── win-x64/              # Windows
-    └── linux-x64/            # Linux
+│   ├── ARCHITECTURE.md           # Architecture & security design
+│   ├── SETUP-MACOS.md            # macOS setup guide
+│   ├── SETUP-WINDOWS.md          # Windows setup guide
+│   ├── SKILL.md                  # AI skill file for Copilot
+│   └── TOOLS-REFERENCE.md        # All MCP tools reference
+└── releases/                     # Pre-built self-contained binaries
+    ├── osx-arm64/                # Apple Silicon (M1/M2/M3/M4)
+    ├── osx-x64/                  # Intel Mac
+    ├── win-x64/                  # Windows
+    └── linux-x64/                # Linux
 ```
 
 ## Security Model

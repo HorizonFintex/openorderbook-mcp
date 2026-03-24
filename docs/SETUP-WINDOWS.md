@@ -31,36 +31,26 @@ New-Item -ItemType Directory -Path $env:USERPROFILE\keys -Force
 Move-Item keystore.json $env:USERPROFILE\keys\
 ```
 
-## 4. Create Your Workspace
+## 4. Open the Repository in VS Code
 
-VS Code works with **folders** — a folder you open becomes your "workspace". All MCP configuration lives inside that folder.
-
-The workspace is **separate from the cloned repo**. You create a new empty folder for your workspace, then copy the MCP config template from the cloned repo into it.
-
-Create a directory to use as your trading workspace:
-
-```powershell
-New-Item -ItemType Directory -Path C:\fro-workspace -Force
-```
-
-Then open it in VS Code:
+Open the cloned repo directly as your workspace — this gives Copilot access to all the documentation (architecture, tools reference, trading skill file) so it can guide you through setup and trading.
 
 1. Launch VS Code
 2. Go to **File → Open Folder…** (or press `Ctrl+K Ctrl+O`)
-3. Navigate to the `fro-workspace` folder you just created and click **Select Folder**
+3. Navigate to the `openorderbook-mcp` folder you cloned and click **Select Folder**
 
-This is now your workspace. The MCP config file will go inside a `.vscode` subfolder here.
+This is now your workspace. The MCP config file will go inside a `.vscode` subfolder here. The `.gitignore` already excludes `.vscode/mcp.json` so your secrets won't be committed.
 
-> **Tip:** You can name the folder anything you like — `fro-workspace` is just a suggestion. You'll use this same folder each time you open VS Code to trade.
+> **Why the repo folder?** The `docs/` folder contains a [SKILL.md](SKILL.md) file that teaches Copilot how to use the trading tools — correct parameter formats, required workflows, error handling, and more. Opening the repo as your workspace lets Copilot read these files automatically.
 
 ## 5. Configure MCP
 
-From your workspace folder, copy the template config:
+Create the `.vscode` folder and copy the template config:
 
 ```powershell
-cd C:\fro-workspace
+cd C:\dev\openorderbook-mcp   # or wherever you cloned the repo
 New-Item -ItemType Directory -Path .vscode -Force
-Copy-Item C:\dev\openorderbook-mcp\config\mcp.json.template .vscode\mcp.json
+Copy-Item config\mcp.json.template .vscode\mcp.json
 ```
 
 Open `.vscode/mcp.json` **inside VS Code** (click it in the Explorer panel — do not use Notepad or another external editor, as VS Code detects MCP config changes automatically).
