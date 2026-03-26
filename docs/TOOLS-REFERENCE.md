@@ -275,7 +275,12 @@ Check the status of an async blockchain transaction by tracking ID. Use this to 
 
 ### Write Tools (9)
 
-All write tools require `address`, `callInfo`, and `signature` from the local signer. Each is protected by server-side signature verification — invalid signatures are rejected before reaching the blockchain.
+All write tools require `address`, `callInfo`, and `signature` from the local signer. Each is protected by two layers of server-side validation before reaching the blockchain:
+
+1. **Signature verification** — Recovers the signer from (callInfo, signature) and rejects if it doesn't match `address`.
+2. **CallInfo cross-validation** — Decodes the ABI-encoded callInfo and verifies that embedded values (ecId, address, side, strikePrice, premium, quantity, collateral, writerFee, expiry, etc.) match the corresponding request parameters. This catches bugs where signed calldata was produced with different values than the submission (e.g., a stale expiry).
+
+If cross-validation fails, the tool returns a `CALLINFO_VALIDATION_ERROR` listing every mismatched field *before* the API call is made.
 
 #### `CreateOffer`
 Create a new fixed-return option offer.

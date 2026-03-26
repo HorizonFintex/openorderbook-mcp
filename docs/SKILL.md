@@ -244,6 +244,11 @@ Returns: { loaded: true/false, address, eventContractAddress, environment }
 - Check errorMessage field for details
 - Common causes: Insufficient balance, invalid signature, contract validation failure
 
+**Error: "CALLINFO_VALIDATION_ERROR"**
+- Cause: The ABI-encoded callInfo contains values that don't match the API request parameters
+- The error message lists every mismatched field (e.g., `expiry: callInfo=1774458000, request=1774544400`)
+- Solution: Ensure the exact same values are used for both signing and submission. Regenerate ecId/expiry via `generate_ecid` if stale
+
 ### Signer Errors
 
 **"Signer not loaded"**
@@ -267,6 +272,8 @@ Returns: { loaded: true/false, address, eventContractAddress, environment }
 - Default expiry is tomorrow midnight UTC (expiryDays=1)
 - Always use the expiry returned by generate_ecid (ensures consistency)
 - Present expiry to user in readable format (expiryIso)
+- **CRITICAL**: The expiry in callInfo (Unix timestamp) must match the expiry in the API request (ISO 8601). The server decodes callInfo and cross-validates — a mismatch rejects the request immediately
+- Never reuse an expiry from a previous generate_ecid call — always generate fresh to avoid "Expiry in the past" reverts on-chain
 
 ### 3. Transaction Polling
 - After CreateOffer, always poll with CheckTxStatus
@@ -277,6 +284,7 @@ Returns: { loaded: true/false, address, eventContractAddress, environment }
 - Sign and submit with EXACT same values
 - Use variables to ensure consistency across steps
 - Don't recalculate or transform values between signing and submission
+- The remote MCP server decodes callInfo and cross-checks embedded values against request parameters — mismatches are rejected with `CALLINFO_VALIDATION_ERROR`
 
 ### 5. User Communication
 - Always inform user of lot size adjustments upfront
@@ -394,6 +402,8 @@ Required in `.vscode/mcp.json` under fro-local-signer env block:
 6. **Use Unix timestamp** for expiry in sign_create_offer
 7. **Both servers must be running** - check MCP server status if tools not responding
 8. **Never commit mcp.json** - contains private keys and secrets
+9. **Generate fresh ecId/expiry** immediately before signing — never reuse values from a previous session
+10. **CallInfo is cross-validated** — the server decodes ABI-encoded callInfo and rejects mismatches against request parameters before calling the API
 
 ---
 
