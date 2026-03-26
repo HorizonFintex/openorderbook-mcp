@@ -112,7 +112,64 @@ The system requires TWO MCP servers working together:
    Returns: { status, transactionHash, gasUsed, offerId, errorMessage }
    ```
 
-### 2. Querying Market Data
+### 2. Purchasing an FRO Offer
+
+**CRITICAL**: The purchase flow requires TWO separate EC IDs — one for the new position (`posEcId`) and one to identify the offer (`offerEcId`). These must be different values. Passing the same value causes the position's on-chain ID to be lost, breaking auto-settlement.
+
+**Steps:**
+1. **Generate Position ECID** (for the new position)
+   ```
+   Tool: mcp_fro-local-sig_generate_ecid
+   Returns: { ecId (posEcId), expiry, expiryIso }
+   ```
+
+2. **Look up the offer's EC ID**
+   ```
+   Tool: mcp_fro-uat_GetOffer
+   Parameters:
+     - offerId: The offer to purchase
+     - bearerToken: Required
+   Returns: Offer details including eventContractId (this is the offerEcId)
+   ```
+
+3. **Sign the purchase** (uses BOTH EC IDs)
+   ```
+   Tool: mcp_fro-local-sig_sign_purchase
+   Parameters:
+     - posEcId: ecId from step 1 (NEW position ID)
+     - offerEcId: eventContractId from step 2 (EXISTING offer ID)
+     - buyer: Buyer wallet address
+     - qty: Number of contracts
+     - payment: Total payment in dollars
+     - buyerFee: Buyer fee (payment * 0.01)
+   Returns: { callInfo, signature }
+   ```
+
+4. **Submit the purchase**
+   ```
+   Tool: mcp_fro-uat_PurchaseOffer
+   Parameters:
+     - address: Buyer wallet address
+     - callInfo: From step 3
+     - signature: From step 3
+     - positionEcId: ecId from step 1 (MUST match posEcId in step 3)
+     - offerEcId: eventContractId from step 2 (MUST match offerEcId in step 3)
+     - offerId: Offer ID to purchase from
+     - quantity: Same as qty in step 3
+     - bearerToken: Required
+   Returns: { TrackingId, Status: "Queued", PositionId }
+   ```
+
+5. **Poll Transaction Status**
+   ```
+   Tool: mcp_fro-uat_CheckTxStatus
+   Parameters:
+     - trackingId: From step 4
+     - bearerToken: Required
+   Returns: { status, transactionHash, gasUsed, positionId, errorMessage }
+   ```
+
+### 3. Querying Market Data
 
 **Get All Offers or Filter by Symbol:**
 ```
@@ -132,7 +189,7 @@ Parameters:
   - bearerToken: Required
 ```
 
-### 3. Checking Signer Status
+### 4. Checking Signer Status
 
 **Always verify signer is loaded before operations:**
 ```

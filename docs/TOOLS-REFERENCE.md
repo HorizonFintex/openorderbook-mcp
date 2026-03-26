@@ -302,12 +302,15 @@ Create a new fixed-return option offer.
 #### `PurchaseOffer`
 Purchase contracts from an existing offer.
 
+**IMPORTANT**: `positionEcId` and `offerEcId` are two **different** EC IDs — do NOT pass the same value for both. `positionEcId` is the new position's EC ID (from `sign_purchase` `posEcId`), `offerEcId` is the offer's EC ID (from `sign_purchase` `offerEcId`).
+
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `address` | string | Yes | Buyer wallet address |
 | `callInfo` | string | Yes | ABI-encoded call data from signing tool |
 | `signature` | string | Yes | ECDSA signature from signing tool |
-| `eventContractId` | integer | Yes | Event contract ID |
+| `positionEcId` | integer | Yes | Position EC ID for the new position (must differ from offerEcId) |
+| `offerEcId` | integer | Yes | Offer EC ID being purchased from |
 | `offerId` | integer | Yes | Offer ID to purchase from |
 | `quantity` | integer | Yes | Number of contracts to purchase |
 
