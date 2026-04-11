@@ -2,7 +2,7 @@
 
 Complete reference for all MCP tools available in the OpenOrderbook system.
 
-## Local Signer MCP Tools (14 tools)
+## Local Signer MCP Tools (16 tools)
 
 These tools run locally on your machine via the `fro-local-signer` MCP server.
 
@@ -39,13 +39,15 @@ Load a hex private key directly into the signer (with or without 0x prefix).
 ### Authentication
 
 #### `acquire_bearer_token`
-Acquire an S2S bearer token from Azure AD B2C using client_credentials flow (MSAL). All config is read from environment variables. Returns the access token and expiry.
+Acquire an S2S bearer token from Azure AD B2C using client_credentials flow (MSAL). All config is read from environment variables. Returns the access token and expiry. Pass `forceRefresh=true` to flush the MSAL token cache and acquire a fresh token from Azure AD — use this when getting persistent 403 errors.
 
-**Parameters:** None
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `forceRefresh` | bool | No | Set to `true` to discard the MSAL token cache and force a fresh token from Azure AD. Defaults to `false`. |
 
 **Environment Variables Required:** `FRO_TENANT_ID`, `FRO_CLIENT_ID`, `FRO_CLIENT_SECRET`, `FRO_SCOPE`
 
-**Returns:** `{ accessToken, expiresIn, environment }`
+**Returns:** `{ accessToken, expiresIn, signatureVerified, cacheCleared, environment }`
 
 ---
 
@@ -173,11 +175,44 @@ Sign a delistForSale transaction for the Feeless relay. Uses keccak256-computed 
 
 ---
 
-## Remote MCP Tools (23 tools)
+### Transfer Signing Tools
+
+These tools sign transfer operations for test/admin environments. They target specific token contracts rather than the FRO event contract.
+
+#### `sign_transfer_dollars`
+Sign a transferDollars transaction against the USD stablecoin contract. Requires the `DOLLAR_CONTRACT_ADDRESS` environment variable to be set.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `toAddress` | string | Yes | Recipient wallet address (0x-prefixed, 42 chars) |
+| `amount` | decimal | Yes | Amount in dollars to transfer |
+| `expiry` | long | Yes | Expiry as Unix timestamp (seconds) — from `generate_ecid` |
+
+**Environment Variable Required:** `DOLLAR_CONTRACT_ADDRESS`
+
+**Returns:** `{ callInfo, signature, signerAddress, targetContract, environment }`
+
+---
+
+#### `sign_transfer_tokens`
+Sign a transferTokens transaction against a specific token contract. The token contract address must be looked up first via `GetTokenDetails` on the remote MCP.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tokenContractAddress` | string | Yes | On-chain token contract address (0x-prefixed, 42 chars) — from `GetTokenDetails` |
+| `toAddress` | string | Yes | Recipient wallet address (0x-prefixed, 42 chars) |
+| `quantity` | int | Yes | Number of tokens to transfer |
+| `expiry` | long | Yes | Expiry as Unix timestamp (seconds) — from `generate_ecid` |
+
+**Returns:** `{ callInfo, signature, signerAddress, targetContract, environment }`
+
+---
+
+## Remote MCP Tools (35 tools)
 
 These tools are exposed by the `fro-uat` remote MCP server hosted on Azure. All tools accept an optional `bearerToken` parameter for authentication.
 
-### Read Tools (10)
+### Read Tools (20)
 
 #### `GetMarket`
 Get the current market of fixed-return option offers, optionally filtered by underlying symbol. Returns open offers and secondary market listings.
@@ -273,7 +308,123 @@ Check the status of an async blockchain transaction by tracking ID. Use this to 
 
 ---
 
-### Write Tools (9)
+#### `GetSettings`
+Get user settings, permissions, balances, market schedule, and KYC status.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `address` | string | Yes | Wallet address (0x-prefixed, 42 chars) |
+
+---
+
+#### `GetMarketSchedule`
+Get the current market schedule — next open/close times and time remaining.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `address` | string | Yes | Wallet address (0x-prefixed, 42 chars) |
+
+---
+
+### Public Market Data Tools (No Authentication Required)
+
+These tools return cached market data and do not require a bearer token.
+
+#### `GetMarketData`
+Get real-time quote data for a symbol: last, close, open, high, low, volume, bid, ask, change.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `symbol` | string | Yes | Symbol to look up (e.g. FMST, BREA) |
+
+---
+
+#### `GetOrderbook`
+Get the bid/ask depth for a symbol.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `symbol` | string | Yes | Symbol to look up |
+
+---
+
+#### `GetTimeAndSales`
+Get the time-and-sales trade tape for a symbol.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `symbol` | string | Yes | Symbol to look up |
+| `pageStart` | integer | No | Pagination start offset |
+
+---
+
+#### `GetSecurityPortfolio`
+Get a wallet's security holdings (stocks, tokens, options). Does not require authentication.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `wallet` | string | Yes | Wallet address (0x-prefixed, 42 chars) |
+
+---
+
+#### `GetOptionsMarket`
+Get all options contracts with strikes, premiums, and open interest.
+
+**Parameters:** None
+
+---
+
+#### `GetNews`
+Get news articles, optionally filtered by symbol.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `symbol` | string | No | Filter by symbol. Leave empty for all news. |
+
+---
+
+#### `GetWarrants`
+Get warrant contracts for a symbol.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `symbol` | string | Yes | Symbol to look up |
+
+---
+
+#### `GetClosingReport`
+Get end-of-day closing prices for a record date, optionally filtered by symbol.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `recordDate` | string | Yes | Record date (YYYY-MM-DD) |
+| `symbol` | string | No | Filter by symbol. Leave empty for all. |
+
+---
+
+#### `GetTokenDetails`
+Look up the on-chain token contract address and metadata for a symbol. Use the returned `tokenAddress` as input to `sign_transfer_tokens`.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `symbol` | string | Yes | Token symbol (e.g. BREA, FMST) |
+| `address` | string | Yes | Wallet address (0x-prefixed, 42 chars) |
+
+**Returns:** `{ tokenAddress, tokenSymbol, tokenIssuer, tokenType, currency, totalSupply, currentPrice, bestBid, bestOffer, canBuy, canSell }`
+
+---
+
+#### `Faucet`
+Top up a wallet with test USD. *(Test environments only.)*
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `wallet` | string | Yes | Wallet address to fund |
+| `amount` | number | Yes | Amount of test USD to add |
+
+---
+
+### Write Tools (11)
 
 All write tools require `address`, `callInfo`, and `signature` from the local signer. Each is protected by two layers of server-side validation before reaching the blockchain:
 
@@ -416,6 +567,37 @@ Create a new prediction market with a title, category, and optional resolution d
 | `resolutionCriteria` | string | No | Criteria for resolving the market |
 | `resolutionSource` | string | No | Source for resolution (e.g. CoinGecko) |
 | `resolutionDate` | string | No | Resolution date (ISO 8601 UTC) |
+
+---
+
+### Transfer Tools
+
+These tools perform **synchronous** on-chain transfers — they wait for the transaction to be mined and return the result directly. No `CheckTxStatus` polling is needed.
+
+#### `TransferDollars`
+Transfer USD between wallets. Signature is validated against the `DOLLAR_CONTRACT_ADDRESS` configured on the remote MCP server.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `address` | string | Yes | Sender wallet address (0x-prefixed, 42 chars) |
+| `callInfo` | string | Yes | ABI-encoded call data from `sign_transfer_dollars` |
+| `signature` | string | Yes | ECDSA signature from `sign_transfer_dollars` |
+| `toAddress` | string | Yes | Recipient wallet address (0x-prefixed, 42 chars) |
+| `amount` | number | Yes | Amount in dollars to transfer |
+
+---
+
+#### `TransferTokens`
+Transfer security tokens between wallets. The remote MCP server dynamically looks up the token contract address via `GetTokenDetails` for signature validation.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `address` | string | Yes | Sender wallet address (0x-prefixed, 42 chars) |
+| `callInfo` | string | Yes | ABI-encoded call data from `sign_transfer_tokens` |
+| `signature` | string | Yes | ECDSA signature from `sign_transfer_tokens` |
+| `toAddress` | string | Yes | Recipient wallet address (0x-prefixed, 42 chars) |
+| `symbol` | string | Yes | Token symbol (e.g. BREA, FMST) |
+| `quantity` | integer | Yes | Number of tokens to transfer |
 
 ---
 

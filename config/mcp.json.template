@@ -22,7 +22,10 @@
         "FRO_TENANT_ID": "058820ef-8462-4935-a840-6e5582798862",
         "FRO_CLIENT_ID": "ce48291b-5ea7-4f15-a5c4-78e6bbfffe89",
         "FRO_CLIENT_SECRET": "<your-client-secret>",
-        "FRO_SCOPE": "https://upstreamdev.onmicrosoft.com/mobileaccess-uat/.default"
+        "FRO_SCOPE": "https://upstreamdev.onmicrosoft.com/mobileaccess-uat/.default",
+
+        // Optional — required only for TransferDollars operations
+        "DOLLAR_CONTRACT_ADDRESS": "0xeC9e37E9E0cCe08754958B06a4362dACAD4a5474"
       }
     },
     "fro-uat": {

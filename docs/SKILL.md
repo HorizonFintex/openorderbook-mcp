@@ -197,6 +197,96 @@ Tool: mcp_fro-local-sig_get_signer_status
 Returns: { loaded: true/false, address, eventContractAddress, environment }
 ```
 
+### 5. Transferring USD (Dollars)
+
+**Steps:**
+1. **Acquire Bearer Token** (if not already acquired)
+   ```
+   Tool: mcp_fro-local-sig_acquire_bearer_token
+   Returns: { accessToken, expiresIn, environment }
+   ```
+
+2. **Generate ECID**
+   ```
+   Tool: mcp_fro-local-sig_generate_ecid
+   Returns: { ecId, expiry, expiryIso }
+   ```
+
+3. **Sign the Transfer**
+   ```
+   Tool: mcp_fro-local-sig_sign_transfer_dollars
+   Parameters:
+     - toAddress: Recipient wallet address (0x-prefixed)
+     - quantity: Amount in dollars (decimal)
+     - expiry: Unix timestamp from step 2
+   Requires: DOLLAR_CONTRACT_ADDRESS env var configured
+   Returns: { callInfo, signature, signerAddress }
+   ```
+
+4. **Submit the Transfer**
+   ```
+   Tool: mcp_fro-uat_TransferDollars
+   Parameters:
+     - address: Sender wallet address
+     - callInfo: From step 3
+     - signature: From step 3
+     - toAddress: Same as step 3
+     - quantity: Same as step 3
+     - bearerToken: Required
+   Returns: { success, transactionHash, status } — synchronous, no polling needed
+   ```
+
+### 6. Transferring Security Tokens
+
+**Steps:**
+1. **Acquire Bearer Token** (if not already acquired)
+   ```
+   Tool: mcp_fro-local-sig_acquire_bearer_token
+   Returns: { accessToken, expiresIn, environment }
+   ```
+
+2. **Look up Token Contract Address**
+   ```
+   Tool: mcp_fro-uat_GetTokenDetails
+   Parameters:
+     - symbol: Token symbol (e.g., "BREA")
+     - bearerToken: Required
+   Returns: { tokenAddress, name, symbol, decimals }
+   ```
+
+3. **Generate ECID**
+   ```
+   Tool: mcp_fro-local-sig_generate_ecid
+   Returns: { ecId, expiry, expiryIso }
+   ```
+
+4. **Sign the Transfer**
+   ```
+   Tool: mcp_fro-local-sig_sign_transfer_tokens
+   Parameters:
+     - tokenContractAddress: tokenAddress from step 2
+     - toAddress: Recipient wallet address (0x-prefixed)
+     - quantity: Number of tokens (integer)
+     - expiry: Unix timestamp from step 3
+   Returns: { callInfo, signature, signerAddress }
+   ```
+
+5. **Submit the Transfer**
+   ```
+   Tool: mcp_fro-uat_TransferTokens
+   Parameters:
+     - address: Sender wallet address
+     - callInfo: From step 4
+     - signature: From step 4
+     - tokenContractAddress: Same as step 4
+     - toAddress: Same as step 4
+     - quantity: Same as step 4
+     - bearerToken: Required
+   Returns: { success, transactionHash, status } — synchronous, no polling needed
+   ```
+
+> **Note:** Transfer operations (TransferDollars and TransferTokens) are synchronous — they return the final result directly. No `CheckTxStatus` polling is needed.
+
 ---
 
 ## Critical Constraints & Validation Rules
@@ -231,8 +321,9 @@ Returns: { loaded: true/false, address, eventContractAddress, environment }
 - Solution: Always include `bearerToken` parameter from acquire_bearer_token
 
 **Error: "The issuer is invalid" (403)**
-- Cause: Bearer token expired or malformed
-- Solution: Acquire fresh token with acquire_bearer_token
+- Cause: Bearer token expired, malformed, or MSAL cache corrupted
+- Solution: Acquire fresh token with `acquire_bearer_token(forceRefresh=true)` to flush the MSAL cache and get a new token from Azure AD
+- If 403 persists after forceRefresh, the Talketh server's OIDC key cache may be stale — a second request usually self-heals as the server auto-refreshes signing keys on signature failure
 
 ### Transaction Errors
 
@@ -266,7 +357,8 @@ Returns: { loaded: true/false, address, eventContractAddress, environment }
 ### 1. Token Management
 - Acquire bearer token once and reuse for multiple operations
 - Tokens last ~1 hour (3600 seconds)
-- If 403 error occurs, acquire new token immediately
+- If 403 error occurs, acquire new token with `acquire_bearer_token(forceRefresh=true)`
+- The `forceRefresh` parameter flushes the MSAL cache and gets a fresh token from Azure AD
 
 ### 2. Expiry Handling
 - Default expiry is tomorrow midnight UTC (expiryDays=1)
@@ -325,14 +417,18 @@ Returns: { loaded: true/false, address, eventContractAddress, environment }
 ### Local Signer Tools (No Bearer Token Needed)
 - `get_signer_status` - Check signer configuration
 - `generate_ecid` - Generate event contract ID
+- `acquire_bearer_token` - Get Azure AD token (supports `forceRefresh=true`)
 - `sign_create_offer` - Sign offer creation
+- `sign_create_market` - Sign market creation
 - `sign_purchase` - Sign offer purchase
 - `sign_cancel_offer` - Sign offer cancellation
 - `sign_exercise` - Sign position exercise
 - `sign_transfer` - Sign position transfer
 - `sign_list_for_sale` - Sign secondary market listing
 - `sign_delist_for_sale` - Sign secondary market delisting
-- `acquire_bearer_token` - Get Azure AD token
+- `sign_release_collateral` - Sign collateral release
+- `sign_transfer_dollars` - Sign USD transfer (requires `DOLLAR_CONTRACT_ADDRESS` env var)
+- `sign_transfer_tokens` - Sign token transfer (requires `tokenContractAddress` from `GetTokenDetails`)
 
 ### Remote API Tools (Bearer Token Required)
 **Read Operations:**
@@ -346,6 +442,20 @@ Returns: { loaded: true/false, address, eventContractAddress, environment }
 - `GetPositionsForSale` - Secondary market listings
 - `GetBalance` - Wallet fiat balance
 - `CheckTxStatus` - Transaction status polling
+- `GetSettings` - User permissions and market schedule
+- `GetMarketSchedule` - Market open/close times
+- `GetTokenDetails` - Token contract address and metadata lookup
+
+**Public Market Data (No Auth Required):**
+- `GetMarketData` - Real-time quote (last, bid, ask, volume, change)
+- `GetOrderbook` - Bid/ask depth
+- `GetTimeAndSales` - Trade tape
+- `GetSecurityPortfolio` - Wallet holdings (stocks, tokens)
+- `GetOptionsMarket` - All options contracts
+- `GetNews` - News articles
+- `GetWarrants` - Warrant contracts
+- `GetClosingReport` - End-of-day prices
+- `Faucet` - Top up test USD (test environments only)
 
 **Write Operations:**
 - `CreateOffer` - Submit signed offer
@@ -354,7 +464,11 @@ Returns: { loaded: true/false, address, eventContractAddress, environment }
 - `ExercisePosition` - Submit signed exercise
 - `TransferPosition` - Submit signed transfer
 - `ListForSale` - Submit signed secondary listing
+- `DelistForSale` - Submit signed delisting
 - `PurchaseSecondary` - Buy from secondary market
+- `CreateMarket` - Create prediction market
+- `TransferDollars` - Transfer USD between wallets (synchronous)
+- `TransferTokens` - Transfer security tokens between wallets (synchronous)
 
 ---
 
@@ -370,7 +484,9 @@ Required in `.vscode/mcp.json` under fro-local-signer env block:
   "FRO_TENANT_ID": "058820ef-8462-4935-a840-6e5582798862",
   "FRO_CLIENT_ID": "ce48291b-5ea7-4f15-a5c4-78e6bbfffe89",
   "FRO_CLIENT_SECRET": "your-secret-from-team-lead",
-  "FRO_SCOPE": "https://upstreamdev.onmicrosoft.com/mobileaccess-uat/.default"
+  "FRO_SCOPE": "https://upstreamdev.onmicrosoft.com/mobileaccess-uat/.default",
+  // Optional — required only for TransferDollars operations
+  "DOLLAR_CONTRACT_ADDRESS": "0xeC9e37E9E0cCe08754958B06a4362dACAD4a5474"
 }
 ```
 
@@ -409,11 +525,9 @@ Required in `.vscode/mcp.json` under fro-local-signer env block:
 
 ## Future Enhancements to Watch For
 
-- Admin operations (AdminSettle, AdminBatchSettle, AdminReleaseCollateral)
-- Market creation (sign_create_market, CreateMarket)
-- Secondary market purchases (PurchaseSecondary after ListForSale)
-- Exercise workflow when positions are exercisable
-- Collateral release after expiry
+- Exercise workflow automation when positions become exercisable
+- Batch transfer operations
+- Production environment support
 
 ---
 

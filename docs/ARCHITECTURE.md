@@ -29,9 +29,9 @@ The OpenOrderbook MCP system uses a **two-server architecture** to enable AI-ass
 │  ┌────────────────────────────────────────────────────────────────┐  │
 │  │  OpenOrderbook MCP (Azure Functions)                           │  │
 │  │  ┌──────────────────┐  ┌────────────────────────────────────┐ │  │
-│  │  │ Signature        │  │ Tool Registry (23 tools)           │ │  │
-│  │  │ Verification     │  │ • 10 Read (GetMarket, GetOffer..)  │ │  │
-│  │  │ (all 10 writes)  │  │ • 9 Write (CreateOffer, Purchase..)│ │  │
+│  │  │ Signature        │  │ Tool Registry (35 tools)           │ │  │
+│  │  │ Verification     │  │ • 20 Read (GetMarket, GetOffer..)  │ │  │
+│  │  │ (all 11 writes)  │  │ • 11 Write (CreateOffer, Transfer..)│ │  │
 │  │  └──────────────────┘  │ • 4 Admin (Settle, Exercise..)     │ │  │
 │  │                        └────────────────────────────────────┘ │  │
 │  └────────────────────────────┬──────────────────────────────────┘  │
@@ -66,7 +66,8 @@ The remote MCP is hosted as Azure Functions and exposed as an HTTP-based MCP end
 
 - **Validates signatures** on all write operations before relaying them
 - **Proxies to OpenOrderbook** — the blockchain relay that manages gas, nonces, and transaction submission
-- **Exposes 23 tools** — 10 read, 9 write, 4 admin
+- **Exposes 35 tools** — 20 read, 11 write, 4 admin
+- **Transfer tools** (TransferDollars, TransferTokens) are synchronous — they return the final result directly without requiring `CheckTxStatus` polling
 
 ### Server-Side Signature Verification
 
@@ -127,6 +128,8 @@ Token flow:
 ```
 Local Signer → Azure AD B2C → access_token → passed to Remote MCP → validates → calls OpenOrderbook
 ```
+
+If authentication fails with 403, use `acquire_bearer_token(forceRefresh=true)` to flush the MSAL token cache and acquire a fresh token. The server auto-refreshes its OIDC signing key cache on signature validation failures.
 
 ## Binaries
 
