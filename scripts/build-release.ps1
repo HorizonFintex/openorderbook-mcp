@@ -1,12 +1,12 @@
 <#
 .SYNOPSIS
-    Builds OpenOrderbookSignerMcp binaries for all platforms and stages them
-    into the openorderbook-mcp releases/ folder.
+    Builds OpenOrderbookSignerMcp and OpenOrderbookAi binaries for all platforms
+    and stages them into the openorderbook-mcp releases/ folder.
 
 .DESCRIPTION
-    Publishes the signer as a self-contained single-file executable for each
-    target runtime, then copies only the release-tracked artefacts (binary +
-    contract ABIs) into releases/<rid>/.
+    Publishes the signer and AI agent as self-contained single-file executables
+    for each target runtime, then copies only the release-tracked artefacts
+    (binaries + contract ABIs) into releases/<rid>/.
 
     Pass -SkipBuild to copy only the contract JSONs and docs without
     rebuilding binaries (useful when only docs/contracts changed).
@@ -28,15 +28,16 @@ $ErrorActionPreference = "Stop"
 # ── Paths ───────────────────────────────────────────────────────────────────
 $RepoRoot       = Split-Path -Parent $PSScriptRoot          # openorderbook-mcp root
 $SignerProject  = Join-Path $TalkethRoot "scripts\OpenOrderbookSignerMcp\OpenOrderbookSignerMcp.csproj"
+$AiProject      = Join-Path $TalkethRoot "OpenOrderbookAi\OpenOrderbookAi.csproj"
 $ReleasesDir    = Join-Path $RepoRoot "releases"
 $TempPublishDir = Join-Path $env:TEMP "oob-mcp-publish"
 
 # Runtime IDs and binary names
 $Platforms = @(
-    @{ Rid = "linux-x64";   Binary = "OpenOrderbookSignerMcp" }
-    @{ Rid = "osx-arm64";   Binary = "OpenOrderbookSignerMcp" }
-    @{ Rid = "osx-x64";     Binary = "OpenOrderbookSignerMcp" }
-    @{ Rid = "win-x64";     Binary = "OpenOrderbookSignerMcp.exe" }
+    @{ Rid = "linux-x64";   SignerBinary = "OpenOrderbookSignerMcp";     AiBinary = "openorderbook-ai" }
+    @{ Rid = "osx-arm64";   SignerBinary = "OpenOrderbookSignerMcp";     AiBinary = "openorderbook-ai" }
+    @{ Rid = "osx-x64";     SignerBinary = "OpenOrderbookSignerMcp";     AiBinary = "openorderbook-ai" }
+    @{ Rid = "win-x64";     SignerBinary = "OpenOrderbookSignerMcp.exe"; AiBinary = "openorderbook-ai.exe" }
 )
 
 # Contract ABI files to copy (relative to publish output)
@@ -49,6 +50,9 @@ $ContractFiles = @(
 if (-not (Test-Path $SignerProject)) {
     Write-Error "Signer project not found at $SignerProject.`nSet -TalkethRoot to the talketh.io repo root."
 }
+if (-not (Test-Path $AiProject)) {
+    Write-Error "AI project not found at $AiProject.`nSet -TalkethRoot to the talketh.io repo root."
+}
 if (-not (Test-Path $ReleasesDir)) {
     Write-Error "releases/ directory not found at $ReleasesDir.`nRun from the openorderbook-mcp repo."
 }
@@ -59,9 +63,9 @@ if (-not $SkipBuild) {
 
     foreach ($p in $Platforms) {
         $rid = $p.Rid
-        $outDir = Join-Path $TempPublishDir $rid
+        $outDir = Join-Path $TempPublishDir "signer\$rid"
 
-        Write-Host "`n--- $rid ---" -ForegroundColor Yellow
+        Write-Host "`n--- signer: $rid ---" -ForegroundColor Yellow
         dotnet publish $SignerProject `
             --configuration Release `
             --runtime $rid `
@@ -70,18 +74,18 @@ if (-not $SkipBuild) {
             --output $outDir
 
         if ($LASTEXITCODE -ne 0) {
-            Write-Error "dotnet publish failed for $rid (exit code $LASTEXITCODE)"
+            Write-Error "dotnet publish failed for signer/$rid (exit code $LASTEXITCODE)"
         }
 
         # Copy binary
-        $srcBin = Join-Path $outDir $p.Binary
-        $dstBin = Join-Path $ReleasesDir "$rid\$($p.Binary)"
+        $srcBin = Join-Path $outDir $p.SignerBinary
+        $dstBin = Join-Path $ReleasesDir "$rid\$($p.SignerBinary)"
         if (-not (Test-Path $srcBin)) {
             Write-Error "Expected binary not found: $srcBin"
         }
         Copy-Item $srcBin $dstBin -Force
         $sizeMB = [math]::Round((Get-Item $dstBin).Length / 1MB, 1)
-        Write-Host "  Copied $($p.Binary) ($sizeMB MB)" -ForegroundColor Green
+        Write-Host "  Copied $($p.SignerBinary) ($sizeMB MB)" -ForegroundColor Green
 
         # Copy contract ABIs
         foreach ($cf in $ContractFiles) {
@@ -98,6 +102,35 @@ if (-not $SkipBuild) {
         }
     }
 
+    Write-Host "`n=== Publishing AI agent for all platforms ===" -ForegroundColor Cyan
+
+    foreach ($p in $Platforms) {
+        $rid = $p.Rid
+        $outDir = Join-Path $TempPublishDir "ai\$rid"
+
+        Write-Host "`n--- ai: $rid ---" -ForegroundColor Yellow
+        dotnet publish $AiProject `
+            --configuration Release `
+            --runtime $rid `
+            --self-contained true `
+            /p:PublishSingleFile=true `
+            --output $outDir
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "dotnet publish failed for ai/$rid (exit code $LASTEXITCODE)"
+        }
+
+        # Copy binary
+        $srcBin = Join-Path $outDir $p.AiBinary
+        $dstBin = Join-Path $ReleasesDir "$rid\$($p.AiBinary)"
+        if (-not (Test-Path $srcBin)) {
+            Write-Error "Expected AI binary not found: $srcBin"
+        }
+        Copy-Item $srcBin $dstBin -Force
+        $sizeMB = [math]::Round((Get-Item $dstBin).Length / 1MB, 1)
+        Write-Host "  Copied $($p.AiBinary) ($sizeMB MB)" -ForegroundColor Green
+    }
+
     # Clean up temp publish output
     Write-Host "`nCleaning temp publish directory..." -ForegroundColor Gray
     Remove-Item -Recurse -Force $TempPublishDir -ErrorAction SilentlyContinue
@@ -110,19 +143,34 @@ $allGood = $true
 
 foreach ($p in $Platforms) {
     $rid = $p.Rid
-    $binPath = Join-Path $ReleasesDir "$rid\$($p.Binary)"
 
-    # Check binary exists and has reasonable size (> 50 MB for single-file)
+    # Check signer binary
+    $binPath = Join-Path $ReleasesDir "$rid\$($p.SignerBinary)"
     if (Test-Path $binPath) {
         $sizeMB = [math]::Round((Get-Item $binPath).Length / 1MB, 1)
         if ($sizeMB -lt 50) {
-            Write-Warning "$rid binary is only $sizeMB MB — expected > 50 MB for single-file publish"
+            Write-Warning "$rid signer is only $sizeMB MB — expected > 50 MB for single-file publish"
             $allGood = $false
         } else {
-            Write-Host "  [OK] $rid/$($p.Binary) ($sizeMB MB)" -ForegroundColor Green
+            Write-Host "  [OK] $rid/$($p.SignerBinary) ($sizeMB MB)" -ForegroundColor Green
         }
     } else {
-        Write-Warning "$rid binary missing: $binPath"
+        Write-Warning "$rid signer binary missing: $binPath"
+        $allGood = $false
+    }
+
+    # Check AI binary
+    $aiBinPath = Join-Path $ReleasesDir "$rid\$($p.AiBinary)"
+    if (Test-Path $aiBinPath) {
+        $sizeMB = [math]::Round((Get-Item $aiBinPath).Length / 1MB, 1)
+        if ($sizeMB -lt 10) {
+            Write-Warning "$rid AI agent is only $sizeMB MB — expected > 10 MB for single-file publish"
+            $allGood = $false
+        } else {
+            Write-Host "  [OK] $rid/$($p.AiBinary) ($sizeMB MB)" -ForegroundColor Green
+        }
+    } else {
+        Write-Warning "$rid AI binary missing: $aiBinPath"
         $allGood = $false
     }
 
