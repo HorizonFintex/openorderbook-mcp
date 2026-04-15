@@ -1,7 +1,7 @@
 # OpenOrderbook MCP Trading Skill
 
 ## Overview
-This skill covers working with the OpenOrderbook MCP (Model Context Protocol) system for creating and managing fixed-return option (FRO) offers on the Horizon Fintex platform. The system uses a dual MCP architecture: a local signing server for cryptographic operations and a remote Azure-hosted server for blockchain interactions.
+This skill covers working with the OpenOrderbook MCP (Model Context Protocol) system for creating and managing fixed-return option (FRO) offers on the Horizon Fintex platform. The system uses a dual MCP architecture: a local signing server for cryptographic operations and a remote Azure-hosted server for blockchain interactions. The standalone OpenOrderbook AI client adds 8 native tools for file I/O, web access, and user profile switching — bringing the total to 59 tools.
 
 ## When to Use This Skill
 - Creating, purchasing, or canceling FRO offers
@@ -287,6 +287,38 @@ Returns: { loaded: true/false, address, eventContractAddress, environment }
 
 > **Note:** Transfer operations (TransferDollars and TransferTokens) are synchronous — they return the final result directly. No `CheckTxStatus` polling is needed.
 
+### 7. Switching User Profiles (OpenOrderbook AI Client)
+
+The OpenOrderbook AI client supports named profiles stored as `config.{Name}.json` files in the `~/.openorderbook-ai/` directory. Each profile has its own keystore, wallet, and credentials.
+
+**Steps:**
+1. **List available profiles**
+   ```
+   Tool: list_profiles
+   Returns: list of profile names (e.g., Andy, Brian)
+   ```
+
+2. **Switch to a profile**
+   ```
+   Tool: switch_profile
+   Parameters:
+     - name: Profile name (e.g., "Brian")
+   Effect: Saves current config, loads target profile, reconnects signer MCP,
+           refreshes wallet address, clears bearer token cache, resets chat history.
+   Returns: confirmation with new wallet address
+   ```
+
+3. **Create a new profile**
+   ```
+   Tool: create_profile
+   Parameters:
+     - name: Profile name to create
+   Effect: Copies current config to config.{Name}.json
+   Returns: confirmation, file path
+   ```
+
+> **Note:** Profile switching is only available in the OpenOrderbook AI CLI client. VS Code + Copilot users configure profiles via separate `.vscode/mcp.json` configuration blocks.
+
 ---
 
 ## Critical Constraints & Validation Rules
@@ -414,7 +446,7 @@ Returns: { loaded: true/false, address, eventContractAddress, environment }
 
 ## Tool Categories Quick Reference
 
-### Local Signer Tools (No Bearer Token Needed)
+### Local Signer Tools (16 — No Bearer Token Needed)
 - `get_signer_status` - Check signer configuration
 - `generate_ecid` - Generate event contract ID
 - `acquire_bearer_token` - Get Azure AD token (supports `forceRefresh=true`)
@@ -430,7 +462,7 @@ Returns: { loaded: true/false, address, eventContractAddress, environment }
 - `sign_transfer_dollars` - Sign USD transfer (requires `DOLLAR_CONTRACT_ADDRESS` env var)
 - `sign_transfer_tokens` - Sign token transfer (requires `tokenContractAddress` from `GetTokenDetails`)
 
-### Remote API Tools (Bearer Token Required)
+### Remote API Tools (35 — Bearer Token Required)
 **Read Operations:**
 - `GetMarket` - Query offers and listings
 - `GetPortfolio` - Get user's offers and positions
@@ -469,6 +501,24 @@ Returns: { loaded: true/false, address, eventContractAddress, environment }
 - `CreateMarket` - Create prediction market
 - `TransferDollars` - Transfer USD between wallets (synchronous)
 - `TransferTokens` - Transfer security tokens between wallets (synchronous)
+
+### Native Tools (8 — OpenOrderbook AI Client Only)
+
+These tools are built into the OpenOrderbook AI CLI client (not part of either MCP server). They run locally in the client process.
+
+**File System:**
+- `read_file` - Read file contents from the workspace
+- `write_file` - Write content to a file in the workspace
+- `list_directory` - List files and directories
+
+**Web Access:**
+- `web_search` - Search the web via DuckDuckGo
+- `http_fetch` - Fetch a URL and return the content
+
+**Profile Management:**
+- `list_profiles` - List available user profiles (config.*.json files)
+- `switch_profile` - Switch to a different profile (reloads config, reconnects signer, resets chat)
+- `create_profile` - Save the current configuration as a new named profile
 
 ---
 
@@ -520,6 +570,8 @@ Required in `.vscode/mcp.json` under fro-local-signer env block:
 8. **Never commit mcp.json** - contains private keys and secrets
 9. **Generate fresh ecId/expiry** immediately before signing — never reuse values from a previous session
 10. **CallInfo is cross-validated** — the server decodes ABI-encoded callInfo and rejects mismatches against request parameters before calling the API
+11. **Profile switching resets state** — bearer token cache and chat history are cleared when switching profiles in the AI client
+12. **Native tools are client-only** — file, web, and profile tools exist only in the OpenOrderbook AI client, not in VS Code + Copilot
 
 ---
 

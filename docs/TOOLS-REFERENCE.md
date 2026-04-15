@@ -1,6 +1,6 @@
 # Tools Reference
 
-Complete reference for all MCP tools available in the OpenOrderbook system.
+Complete reference for all MCP tools and native tools available in the OpenOrderbook system. Total: 16 local signer + 35 remote + 8 native = **59 tools**.
 
 ## Local Signer MCP Tools (16 tools)
 
@@ -644,3 +644,100 @@ Release collateral back to the writer after all positions have been settled. Req
 | `signature` | string | Yes | ECDSA signature from signing tool |
 | `eventContractId` | integer | Yes | Event contract ID |
 | `offerId` | integer | Yes | Offer ID to release collateral for |
+
+---
+
+## Native Tools (8 tools) — OpenOrderbook AI Client Only
+
+These tools are built into the OpenOrderbook AI CLI client process. They are **not** part of either MCP server and are unavailable in VS Code + Copilot. They run locally and require no authentication.
+
+### File System Tools
+
+#### `read_file`
+Read the contents of a file from the workspace directory.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `path` | string | Yes | File path (relative to workspace or absolute) |
+
+**Returns:** File contents as text.
+
+---
+
+#### `write_file`
+Write content to a file in the workspace directory. Creates the file if it doesn't exist; overwrites if it does.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `path` | string | Yes | File path (relative to workspace or absolute) |
+| `content` | string | Yes | Content to write |
+
+**Returns:** Confirmation message.
+
+---
+
+#### `list_directory`
+List files and subdirectories in a directory.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `path` | string | Yes | Directory path (relative to workspace or absolute) |
+
+**Returns:** List of entries with type indicators (file/directory).
+
+---
+
+### Web Access Tools
+
+#### `web_search`
+Search the web using DuckDuckGo and return results.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `query` | string | Yes | Search query |
+
+**Returns:** Search results with titles and URLs.
+
+---
+
+#### `http_fetch`
+Fetch the content of a URL via HTTP GET.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `url` | string | Yes | URL to fetch |
+
+**Returns:** Response body as text.
+
+---
+
+### Profile Management Tools
+
+#### `list_profiles`
+List all available user profiles. Scans for `config.*.json` files in `~/.openorderbook-ai/`.
+
+**Parameters:** None
+
+**Returns:** List of profile names and which one is currently active.
+
+---
+
+#### `switch_profile`
+Switch to a different user profile. Saves the current config, loads the target profile's config, reconnects the local signer MCP with the new keystore/credentials, refreshes wallet address, clears the bearer token cache, and resets chat history.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | Profile name to switch to (e.g., "Brian") |
+
+**Returns:** Confirmation with new wallet address and profile name.
+
+---
+
+#### `create_profile`
+Save the current configuration as a new named profile. Creates `config.{name}.json` in `~/.openorderbook-ai/`.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | Profile name to create |
+
+**Returns:** Confirmation with file path.

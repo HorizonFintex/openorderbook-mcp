@@ -17,3 +17,8 @@ This workspace contains the OpenOrderbook MCP system for trading fixed-return op
 - **Fresh ecId/expiry**: Always call `generate_ecid` immediately before signing. Never reuse values from a previous session — stale expiry causes "Expiry in the past" reverts on-chain.
 - **Poll after writes**: After most write operations (CreateOffer, Purchase, etc.), poll `CheckTxStatus` until status is `Mined` or `Failed`. Exception: TransferDollars and TransferTokens are synchronous and return the result directly.
 - **Transfer operations**: TransferDollars requires `DOLLAR_CONTRACT_ADDRESS` in env vars. TransferTokens requires looking up the token contract address via `GetTokenDetails` first.
+
+## Native Tools (OpenOrderbook AI Client)
+- The standalone AI client provides 8 native tools: `read_file`, `write_file`, `list_directory`, `web_search`, `http_fetch`, `list_profiles`, `switch_profile`, `create_profile`.
+- Profile switching (`switch_profile`) reconnects the signer MCP, clears bearer token cache, and resets chat history.
+- These tools are NOT available in VS Code + Copilot — they only exist in the OpenOrderbook AI CLI client.

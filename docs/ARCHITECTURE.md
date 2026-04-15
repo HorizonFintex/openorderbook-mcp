@@ -11,14 +11,18 @@ The OpenOrderbook MCP system uses a **two-server architecture** to enable AI-ass
 │  ┌──────────────┐    stdio    ┌──────────────────────────────────┐  │
 │  │  VS Code +   │◄──────────►│  Local Signer MCP                │  │
 │  │  Copilot     │            │  ┌──────────┐  ┌──────────────┐  │  │
-│  │              │            │  │ Keystore │  │ MSAL Auth    │  │  │
-│  │              │            │  │ Decrypt  │  │ (B2C tokens) │  │  │
-│  │              │            │  └──────────┘  └──────────────┘  │  │
-│  │              │            │  ┌──────────────────────────────┐ │  │
+│  │   — or —     │            │  │ Keystore │  │ MSAL Auth    │  │  │
+│  │  OpenOrder-  │            │  │ Decrypt  │  │ (B2C tokens) │  │  │
+│  │  book AI     │            │  └──────────┘  └──────────────┘  │  │
+│  │  (CLI)       │            │  ┌──────────────────────────────┐ │  │
 │  │              │            │  │ Transaction Signing          │ │  │
-│  │              │            │  │ (Feeless: ABIEncodePacked    │ │  │
-│  │              │            │  │  + keccak256 + ECDSA)        │ │  │
-│  └──────┬───────┘            └──────────────────────────────────┘  │
+│  │  ┌────────┐  │            │  │ (Feeless: ABIEncodePacked    │ │  │
+│  │  │Native  │  │            │  │  + keccak256 + ECDSA)        │ │  │
+│  │  │Tools(8)│  │            │  └──────────────────────────────┘ │  │
+│  │  │File,Web│  │            └──────────────────────────────────┘  │
+│  │  │Profile │  │                                                   │
+│  │  └────────┘  │                                                   │
+│  └──────┬───────┘                                                   │
 │         │                                                           │
 └─────────┼───────────────────────────────────────────────────────────┘
           │ HTTPS
@@ -130,6 +134,26 @@ Local Signer → Azure AD B2C → access_token → passed to Remote MCP → vali
 ```
 
 If authentication fails with 403, use `acquire_bearer_token(forceRefresh=true)` to flush the MSAL token cache and acquire a fresh token. The server auto-refreshes its OIDC signing key cache on signature validation failures.
+
+## Native Tools (OpenOrderbook AI Client)
+
+The standalone OpenOrderbook AI CLI client adds 8 native tools that run inside the client process (not via MCP). These are unavailable in VS Code + Copilot.
+
+| Category | Tools | Description |
+|----------|-------|-------------|
+| **File System** | `read_file`, `write_file`, `list_directory` | Local file operations within the workspace |
+| **Web Access** | `web_search`, `http_fetch` | DuckDuckGo search and HTTP fetch |
+| **Profiles** | `list_profiles`, `switch_profile`, `create_profile` | Multi-user profile switching |
+
+### Profile Switching
+
+Profiles are stored as `config.{Name}.json` in `~/.openorderbook-ai/`. Switching profiles:
+1. Saves the current profile's config
+2. Loads the target profile (new keystore, wallet, credentials)
+3. Reconnects the local signer MCP subprocess with new environment variables
+4. Clears the bearer token cache and resets chat history
+
+This enables multi-user operation on shared servers — each user has their own keystore and wallet.
 
 ## Binaries
 
