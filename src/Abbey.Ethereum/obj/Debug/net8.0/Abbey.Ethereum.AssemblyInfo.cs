@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Abbey Technology GmbH")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.2")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0.2+26596749df95df68e40aac38a3d17a72ab6081a2")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0.2+3c00e60f373849204948f2c74a74d4069ed2f6f8")]
 [assembly: System.Reflection.AssemblyProductAttribute("Abbey.Ethereum")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Abbey.Ethereum")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.2")]
