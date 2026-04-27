@@ -33,11 +33,16 @@ The OpenOrderbook MCP system uses a **two-server architecture** to enable AI-ass
 │  ┌────────────────────────────────────────────────────────────────┐  │
 │  │  OpenOrderbook MCP (Azure Functions)                           │  │
 │  │  ┌──────────────────┐  ┌────────────────────────────────────┐ │  │
-│  │  │ Signature        │  │ Tool Registry (35 tools)           │ │  │
+│  │  │ Signature        │  │ Tool Registry (56 tools)           │ │  │
 │  │  │ Verification     │  │ • 20 Read (GetMarket, GetOffer..)  │ │  │
 │  │  │ (all 11 writes)  │  │ • 11 Write (CreateOffer, Transfer..)│ │  │
 │  │  └──────────────────┘  │ • 4 Admin (Settle, Exercise..)     │ │  │
-│  │                        └────────────────────────────────────┘ │  │
+│  │                        │ • 3 Market (CreateMarket, etc.)     │ │  │
+│  │  ┌──────────────────┐  │ • 18 1X2 (three-outcome betting)   │ │  │
+│  │  │ 1X2 API Proxy    │  └────────────────────────────────────┘ │  │
+│  │  │ (pass-through,   │                                         │  │
+│  │  │  no client sign) │                                         │  │
+│  │  └──────────────────┘                                         │  │
 │  └────────────────────────────┬──────────────────────────────────┘  │
 │                               │ HTTPS                                │
 │  ┌────────────────────────────▼──────────────────────────────────┐  │
@@ -70,7 +75,8 @@ The remote MCP is hosted as Azure Functions and exposed as an HTTP-based MCP end
 
 - **Validates signatures** on all write operations before relaying them
 - **Proxies to OpenOrderbook** — the blockchain relay that manages gas, nonces, and transaction submission
-- **Exposes 35 tools** — 20 read, 11 write, 4 admin
+- **Proxies to the 1X2 API** — a separate backend for three-outcome event betting (no client-side signing required)
+- **Exposes 56 tools** — 38 EC tools (read, write, admin) + 18 1X2 tools (pass-through proxy)
 - **Transfer tools** (TransferDollars, TransferTokens) are synchronous — they return the final result directly without requiring `CheckTxStatus` polling
 
 ### Server-Side Signature Verification
@@ -103,6 +109,20 @@ If the signature bytes are malformed:
   "message": "Signature verification error: Invalid point compression",
   "hint": "Check that callInfo and signature are valid 0x-prefixed hex strings."
 }
+```
+
+### 1X2 API Proxy (No Client-Side Signing)
+
+The 18 1X2 tools use a different architecture — they are **pure pass-through proxies** to the 1X2 Function App (`ONEX2_API_BASE_URL`). Unlike EC tools:
+
+- **No client-side signing** — the 1X2 API handles signing server-side
+- **No callInfo/signature** — just business parameters (wallet, eventId, quantity, etc.)
+- **Same bearer token** — authentication uses the same S2S token as EC tools
+- **Synchronous** — no `CheckTxStatus` polling needed; results return directly
+
+```
+AI Client / Copilot  ──►  Remote MCP (Azure Functions)  ──►  1X2 API (Azure Functions)
+                          [bearer token forwarded]           [server-side signing]
 ```
 
 ## Feeless Signing Flow

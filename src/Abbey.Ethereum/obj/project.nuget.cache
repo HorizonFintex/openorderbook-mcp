@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "S0hd/uz+kdA=",
+  "dgSpecHash": "q7iEQK4viA8=",
   "success": true,
-  "projectFilePath": "C:\\dev\\openorderbook-mcp\\src\\Abbey.Ethereum\\Abbey.Ethereum.csproj",
+  "projectFilePath": "c:\\dev\\openorderbook-mcp\\src\\Abbey.Ethereum\\Abbey.Ethereum.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\andre\\.nuget\\packages\\binaryencoding\\1.4.0\\binaryencoding.1.4.0.nupkg.sha512",
     "C:\\Users\\andre\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\8.0.0\\microsoft.extensions.configuration.abstractions.8.0.0.nupkg.sha512",

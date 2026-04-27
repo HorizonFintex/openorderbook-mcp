@@ -321,6 +321,57 @@ The OpenOrderbook AI client supports named profiles stored as `config.{Name}.jso
 
 ---
 
+## 1X2 Tools (Three-Outcome Event Betting)
+
+The MCP server includes 18 tools for the **1X2 API** — a separate system for three-outcome event betting (Home Win / Draw / Away Win), typically used for sports markets.
+
+### Key Differences from EC Tools
+
+| Aspect | EC Tools (existing) | 1X2 Tools (new) |
+|--------|-------------------|-----------------|
+| Signing | Client-side (`sign_*` → callInfo + signature) | Server-side (1X2 API signs internally) |
+| Workflow | generate_ecid → sign → submit → poll CheckTxStatus | acquire_bearer_token → call tool → done |
+| Parameters | callInfo, signature, address, device metadata | Simple business parameters only |
+| Auth | S2S bearer token (Server2Server scheme) | S2S bearer token (same) |
+| Base URL | `FRO_BASE_URL` (Talketh) | `ONEX2_API_BASE_URL` (1X2 Function App) |
+
+### 1X2 Workflow (Simplified)
+
+1. `acquire_bearer_token` on local signer → get `bearerToken`
+2. Call any `OneX2*` tool with `bearerToken` parameter → done
+
+No `generate_ecid`, no `sign_*`, no `CheckTxStatus` polling needed.
+
+### Example: List Event → Maker → Taker → Settle
+
+```
+1. acquire_bearer_token → bearerToken
+2. OneX2ListEvent(category="football", homeLabel="Celta Vigo", awayLabel="Freiburg",
+     eventType="1X2 - Full Time", settleDate="2026-04-15T17:00:00Z", bearerToken=...)
+   → eventId=5
+3. OneX2Maker(wallet="0x...", eventId=5, outcome="1", makerProbability=0.45,
+     quantity=200, expiry="2026-04-15T17:00:00Z", bearerToken=...)
+   → orderId=42
+4. OneX2Taker(wallet="0x...", orderId=42, quantity=100, bearerToken=...)
+   → positionId=7
+5. OneX2SettleEvent(eventId=5, outcome="1", bearerToken=...)
+   → all three ECs settled
+```
+
+### 1X2 Tool Listing
+
+**User Management:** `OneX2CreateUser`, `OneX2PauseUser`
+**Money:** `OneX2OmnibusTransaction`, `OneX2TransferMoney`
+**Events:** `OneX2ListEvent`, `OneX2GetEvent`
+**Orders:** `OneX2Maker`, `OneX2Taker`, `OneX2Cancel`, `OneX2Void`, `OneX2SecondaryMaker`
+**Settlement:** `OneX2SettleEvent`
+**Queries:** `OneX2Orderbook`, `OneX2CashPosition`, `OneX2OpenPositions`, `OneX2ClosedPositions`, `OneX2Exposure`
+**Operations:** `OneX2PauseOrderbook`
+
+> See [TOOLS-REFERENCE.md](TOOLS-REFERENCE.md) for full parameter details for each tool.
+
+---
+
 ## Critical Constraints & Validation Rules
 
 ### Lot Size Requirement
@@ -462,7 +513,7 @@ The OpenOrderbook AI client supports named profiles stored as `config.{Name}.jso
 - `sign_transfer_dollars` - Sign USD transfer (requires `DOLLAR_CONTRACT_ADDRESS` env var)
 - `sign_transfer_tokens` - Sign token transfer (requires `tokenContractAddress` from `GetTokenDetails`)
 
-### Remote API Tools (35 — Bearer Token Required)
+### Remote API Tools (38 EC — Bearer Token Required)
 **Read Operations:**
 - `GetMarket` - Query offers and listings
 - `GetPortfolio` - Get user's offers and positions
@@ -520,6 +571,15 @@ These tools are built into the OpenOrderbook AI CLI client (not part of either M
 - `switch_profile` - Switch to a different profile (reloads config, reconnects signer, resets chat)
 - `create_profile` - Save the current configuration as a new named profile
 
+### Remote 1X2 API Tools (18 — Bearer Token Required, No Signing)
+**User Management:** `OneX2CreateUser`, `OneX2PauseUser`
+**Money:** `OneX2OmnibusTransaction`, `OneX2TransferMoney`
+**Events:** `OneX2ListEvent`, `OneX2GetEvent`
+**Orders:** `OneX2Maker`, `OneX2Taker`, `OneX2Cancel`, `OneX2Void`, `OneX2SecondaryMaker`
+**Settlement:** `OneX2SettleEvent`
+**Queries:** `OneX2Orderbook`, `OneX2CashPosition`, `OneX2OpenPositions`, `OneX2ClosedPositions`, `OneX2Exposure`
+**Operations:** `OneX2PauseOrderbook`
+
 ---
 
 ## Environment Variables Reference
@@ -539,6 +599,12 @@ Required in `.vscode/mcp.json` under fro-local-signer env block:
   "DOLLAR_CONTRACT_ADDRESS": "0xeC9e37E9E0cCe08754958B06a4362dACAD4a5474"
 }
 ```
+
+Required on the remote MCP server (`openorderbookmcp-uat`) for 1X2 tools:
+```
+ONEX2_API_BASE_URL=https://onex2api-uat.azurewebsites.net
+```
+Defaults to the UAT endpoint if not set.
 
 ---
 

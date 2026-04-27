@@ -1,6 +1,6 @@
 # Tools Reference
 
-Complete reference for all MCP tools and native tools available in the OpenOrderbook system. Total: 16 local signer + 35 remote + 8 native = **59 tools**.
+Complete reference for all MCP tools and native tools available in the OpenOrderbook system. Total: 16 local signer + 38 remote EC + 18 remote 1X2 + 8 native = **80 tools**.
 
 ## Local Signer MCP Tools (16 tools)
 
@@ -644,6 +644,223 @@ Release collateral back to the writer after all positions have been settled. Req
 | `signature` | string | Yes | ECDSA signature from signing tool |
 | `eventContractId` | integer | Yes | Event contract ID |
 | `offerId` | integer | Yes | Offer ID to release collateral for |
+
+---
+
+## 1X2 API Tools (18 tools)
+
+These tools call the **1X2 Function App** (`ONEX2_API_BASE_URL`) for three-outcome event betting. Unlike the EC write tools above, **no client-side signing is required** — the 1X2 API handles all blockchain signing server-side. Authentication is via the same S2S bearer token passed in `bearerToken`.
+
+### User Management
+
+#### `OneX2CreateUser`
+Register a new retail user. Generates a Web3 key pair, submits KYC, and enables the wallet for trading.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `web2UserId` | string | Yes | Unique user ID within the member's scope (1–100 chars) |
+| `dateOfBirth` | string | Yes | ISO date (YYYY-MM-DD), user must be 18+ |
+| `domicile` | string | Yes | ISO 3166-1 alpha-2 country code |
+| `memberKycCertified` | boolean | Yes | Must be `true` |
+| `firstName` | string | No | User's first name |
+| `lastName` | string | No | User's last name |
+| `email` | string | No | User's email address |
+| `phoneNumber` | string | No | User's phone number |
+| `nationality` | string | No | ISO 3166-1 alpha-2 country code |
+| `profilePictureUrl` | string | No | URL to profile picture (downloaded server-side) |
+| `identityDocumentUrl` | string | No | URL to identity document (downloaded server-side) |
+| `utilityBillUrl` | string | No | URL to utility bill (downloaded server-side) |
+| `videoInterviewUrl` | string | No | URL to video interview (downloaded server-side) |
+
+---
+
+#### `OneX2PauseUser`
+Temporarily suspend a user's trading ability (consumer protection).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `wallet` | string | Yes | User wallet address |
+| `durationSeconds` | integer | Yes | Pause duration in seconds; 0 = indefinite |
+
+---
+
+### Money Management
+
+#### `OneX2OmnibusTransaction`
+Credit or debit the member's omnibus account. Positive = credit, negative = debit.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `amount` | number | Yes | Amount (positive = credit, negative = debit; non-zero) |
+| `memberReference` | string | Yes | Free text reference for reconciliation (1–200 chars) |
+
+---
+
+#### `OneX2TransferMoney`
+Move funds between the member's omnibus account and a user wallet.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `userWallet` | string | Yes | User wallet address |
+| `amount` | number | Yes | Positive = omnibus→user, negative = user→omnibus |
+
+---
+
+### Event Lifecycle
+
+#### `OneX2ListEvent`
+Create a new 1X2 event with three outcomes (Home Win / Draw / Away Win).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `category` | string | Yes | Event category (e.g. football) |
+| `homeLabel` | string | Yes | Home team/participant name |
+| `awayLabel` | string | Yes | Away team/participant name |
+| `eventType` | string | Yes | e.g. "1X2 - Full Time", "1X2 - First Half" |
+| `settleDate` | string | Yes | ISO 8601 UTC; must be in the future |
+
+---
+
+#### `OneX2GetEvent`
+Get event details including status and summary of all three outcomes.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `eventId` | integer | Yes | The 1X2 event ID |
+
+---
+
+### Order Management
+
+#### `OneX2Maker`
+Create a maker order on a specific outcome. Collateral = quantity × makerProbability. Fee = 1% of collateral.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `wallet` | string | Yes | User wallet (must belong to this member) |
+| `eventId` | integer | Yes | The 1X2 event ID |
+| `outcome` | string | Yes | `"1"` (Home), `"X"` (Draw), or `"2"` (Away) |
+| `makerProbability` | number | Yes | Implied probability (0.01–0.99) |
+| `quantity` | integer | Yes | Number of contracts; multiple of 100 |
+| `expiry` | string | Yes | ISO 8601 UTC; must not exceed settle date |
+
+---
+
+#### `OneX2Taker`
+Take (buy) contracts from an existing maker order. Payment = quantity × (1 - makerProbability). Fee = 1% of payment.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `wallet` | string | Yes | User wallet (must belong to this member) |
+| `orderId` | integer | Yes | Maker order ID to take from |
+| `quantity` | integer | Yes | Contracts to take; multiple of 100, ≤ remaining |
+
+---
+
+#### `OneX2Cancel`
+Cancel an unfilled maker order. Returns collateral + fee to the maker.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `wallet` | string | Yes | Must be the order creator's wallet |
+| `orderId` | integer | Yes | Maker order ID to cancel |
+
+---
+
+#### `OneX2Void`
+Void a taker position. Returns collateral + fees to both maker and taker.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `positionId` | integer | Yes | Position ID to void |
+| `reason` | string | No | Free text reason for audit trail |
+
+---
+
+#### `OneX2SecondaryMaker`
+List an existing position for resale on the secondary market.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `wallet` | string | Yes | Must be the position holder's wallet |
+| `positionId` | integer | Yes | Position ID to list for resale |
+| `makerProbability` | number | Yes | Asking price as probability (0.01–0.99) |
+| `quantity` | integer | Yes | Must match position quantity (V1: full position only) |
+
+---
+
+### Settlement
+
+#### `OneX2SettleEvent`
+Declare the outcome and settle all three event contracts in the 1X2 triplet.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `eventId` | integer | Yes | The 1X2 event ID to settle |
+| `outcome` | string | Yes | `"1"` (Home), `"X"` (Draw), `"2"` (Away), or `"0"` (Void) |
+
+---
+
+### Query Endpoints
+
+#### `OneX2Orderbook`
+Get the full orderbook for a 1X2 event, organized by outcome.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `eventId` | integer | Yes | The 1X2 event ID |
+
+---
+
+#### `OneX2CashPosition`
+Get the cash balance for a wallet.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `wallet` | string | Yes | Wallet address |
+
+---
+
+#### `OneX2OpenPositions`
+Get all open positions for a wallet, grouped by 1X2 event.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `wallet` | string | Yes | Wallet address |
+
+---
+
+#### `OneX2ClosedPositions`
+Get settled positions for a wallet within an optional date range.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `wallet` | string | Yes | Wallet address |
+| `from` | string | No | Start date filter (ISO 8601 UTC) |
+| `to` | string | No | End date filter (ISO 8601 UTC) |
+
+---
+
+#### `OneX2Exposure`
+Calculate hypothetical P&L for a wallet's positions on an event across all three outcomes.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `wallet` | string | Yes | Wallet address |
+| `eventId` | integer | Yes | The 1X2 event ID |
+
+---
+
+### Orderbook Management
+
+#### `OneX2PauseOrderbook`
+Pause an event's orderbook (e.g. when a match starts). No new orders while paused.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `eventId` | integer | Yes | The 1X2 event ID |
+| `durationSeconds` | integer | Yes | Pause duration in seconds; 0 = until settled |
+| `rejectQueuedOrders` | boolean | No | If true, cancel pending unfilled orders |
 
 ---
 

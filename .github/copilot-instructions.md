@@ -1,6 +1,6 @@
 # OpenOrderbook MCP — Copilot Instructions
 
-This workspace contains the OpenOrderbook MCP system for trading fixed-return options (FROs) via VS Code and GitHub Copilot.
+This workspace contains the OpenOrderbook MCP system for trading fixed-return options (FROs) and three-outcome events (1X2) via VS Code and GitHub Copilot.
 
 ## Key Context
 - Read `docs/SKILL.md` for the complete trading skill — workflows, parameter formats, validation rules, and error handling
@@ -17,6 +17,14 @@ This workspace contains the OpenOrderbook MCP system for trading fixed-return op
 - **Fresh ecId/expiry**: Always call `generate_ecid` immediately before signing. Never reuse values from a previous session — stale expiry causes "Expiry in the past" reverts on-chain.
 - **Poll after writes**: After most write operations (CreateOffer, Purchase, etc.), poll `CheckTxStatus` until status is `Mined` or `Failed`. Exception: TransferDollars and TransferTokens are synchronous and return the result directly.
 - **Transfer operations**: TransferDollars requires `DOLLAR_CONTRACT_ADDRESS` in env vars. TransferTokens requires looking up the token contract address via `GetTokenDetails` first.
+
+## 1X2 Tools (Three-Outcome Events)
+- The remote MCP includes 18 `OneX2*` tools for three-outcome event betting (Home/Draw/Away).
+- **No client-side signing** — 1X2 tools are pure pass-through proxies. Just pass `bearerToken` + business parameters.
+- **No ecId/callInfo/signature** — the 1X2 API handles signing server-side.
+- **No CheckTxStatus polling** — results return directly.
+- **Same bearer token** — acquire via `acquire_bearer_token` on the local signer, same as EC tools.
+- Tool categories: User Management (`OneX2CreateUser`, `OneX2PauseUser`), Money (`OneX2OmnibusTransaction`, `OneX2TransferMoney`), Events (`OneX2ListEvent`, `OneX2GetEvent`), Orders (`OneX2Maker`, `OneX2Taker`, `OneX2Cancel`, `OneX2Void`, `OneX2SecondaryMaker`), Settlement (`OneX2SettleEvent`), Queries (`OneX2Orderbook`, `OneX2CashPosition`, `OneX2OpenPositions`, `OneX2ClosedPositions`, `OneX2Exposure`), Operations (`OneX2PauseOrderbook`).
 
 ## Native Tools (OpenOrderbook AI Client)
 - The standalone AI client provides 8 native tools: `read_file`, `write_file`, `list_directory`, `web_search`, `http_fetch`, `list_profiles`, `switch_profile`, `create_profile`.

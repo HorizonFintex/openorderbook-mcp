@@ -1,6 +1,6 @@
-# OpenOrderbook MCP — Fixed-Return Options Trading via AI
+# OpenOrderbook MCP — Fixed-Return Options & 1X2 Trading via AI
 
-Trade fixed-return options (FROs) using AI. This repository ships two ways to interact with the OpenOrderbook platform:
+Trade fixed-return options (FROs) and three-outcome events (1X2) using AI. This repository ships two ways to interact with the OpenOrderbook platform:
 
 | | **Standalone AI Client** | **VS Code + Copilot** |
 |---|---|---|
@@ -128,6 +128,16 @@ Once set up (either option), ask the AI to:
 
 The AI handles the full sign → submit → confirm workflow automatically.
 
+### 1X2 (Three-Outcome Events)
+
+- **List an event**: "List a 1X2 event for Celta Vigo vs Freiburg on April 15th"
+- **Make an offer**: "Make a 1X2 offer on event 5, outcome Home Win, probability 0.45, 200 qty"
+- **Take an offer**: "Take order 42 for 100 qty"
+- **Settle**: "Settle event 5 with outcome Home Win"
+- **Query**: "Show my open 1X2 positions" or "What's my 1X2 cash balance?"
+
+1X2 tools are simpler — no client-side signing needed, just bearer token auth.
+
 ## Documentation
 
 | Document | Description |
@@ -136,7 +146,7 @@ The AI handles the full sign → submit → confirm workflow automatically.
 | [SETUP-MACOS.md](docs/SETUP-MACOS.md) | macOS setup for VS Code + Copilot |
 | [SETUP-WINDOWS.md](docs/SETUP-WINDOWS.md) | Windows setup for VS Code + Copilot |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Two-server model, signing flow, security design |
-| [TOOLS-REFERENCE.md](docs/TOOLS-REFERENCE.md) | Complete reference for all local + remote MCP tools |
+| [TOOLS-REFERENCE.md](docs/TOOLS-REFERENCE.md) | Complete reference for all 80 MCP tools (local + remote EC + remote 1X2 + native) |
 | [SKILL.md](docs/SKILL.md) | AI skill file — trading workflows, parameter formats, error handling |
 
 ## Repository Structure

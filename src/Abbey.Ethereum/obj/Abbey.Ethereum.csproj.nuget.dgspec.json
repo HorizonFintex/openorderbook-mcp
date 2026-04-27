@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\dev\\openorderbook-mcp\\src\\Abbey.Ethereum\\Abbey.Ethereum.csproj": {}
+    "c:\\dev\\openorderbook-mcp\\src\\Abbey.Ethereum\\Abbey.Ethereum.csproj": {}
   },
   "projects": {
-    "C:\\dev\\openorderbook-mcp\\src\\Abbey.Ethereum\\Abbey.Ethereum.csproj": {
+    "c:\\dev\\openorderbook-mcp\\src\\Abbey.Ethereum\\Abbey.Ethereum.csproj": {
       "version": "1.0.0.2",
       "restore": {
-        "projectUniqueName": "C:\\dev\\openorderbook-mcp\\src\\Abbey.Ethereum\\Abbey.Ethereum.csproj",
+        "projectUniqueName": "c:\\dev\\openorderbook-mcp\\src\\Abbey.Ethereum\\Abbey.Ethereum.csproj",
         "projectName": "Abbey.Ethereum",
-        "projectPath": "C:\\dev\\openorderbook-mcp\\src\\Abbey.Ethereum\\Abbey.Ethereum.csproj",
+        "projectPath": "c:\\dev\\openorderbook-mcp\\src\\Abbey.Ethereum\\Abbey.Ethereum.csproj",
         "packagesPath": "C:\\Users\\andre\\.nuget\\packages\\",
-        "outputPath": "C:\\dev\\openorderbook-mcp\\src\\Abbey.Ethereum\\obj\\",
+        "outputPath": "c:\\dev\\openorderbook-mcp\\src\\Abbey.Ethereum\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
